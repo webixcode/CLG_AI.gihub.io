@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>CL AI | Нейросеть</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); min-height: 100vh; }
+        
+        /* ОБЩИЕ СТИЛИ */
+        .app-container { width: 100%; height: 100vh; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); }
+        .header { background: rgba(0, 0, 0, 0.4); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); flex-shrink: 0; }
+        .logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .logo-text { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .badge { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 10px; color: #aaa; }
+        .user-info { display: flex; gap: 12px; align-items: center; background: rgba(255,255,255,0.1); padding: 6px 16px; border-radius: 40px; }
+        .user-name { color: white; font-size: 14px; font-weight: 500; }
+        button { padding: 8px 16px; border: none; border-radius: 12px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { transform: scale(1.02); }
+        .btn-danger { background: rgba(239,68,68,0.8); color: white; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        
+        /* ЧАТ ЛЭЙАУТ */
+        .chat-layout { display: flex; flex: 1; overflow: hidden; }
+        .sidebar { width: 280px; background: rgba(0,0,0,0.3); border-right: 1px solid rgba(255,255,255,0.1); padding: 16px; overflow-y: auto; transition: 0.3s; }
+        .sidebar h3 { color: white; font-size: 16px; margin-bottom: 12px; }
+        .new-dialog-btn { width: 100%; padding: 12px; margin-bottom: 16px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; }
+        .dialog-item { background: rgba(255,255,255,0.05); padding: 12px; margin-bottom: 8px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+        .dialog-item.active { background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3)); }
+        .dialog-title { color: white; font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+        .dialog-date { font-size: 10px; color: rgba(255,255,255,0.5); }
+        .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .message { display: flex; max-width: 80%; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { align-self: flex-end; }
+        .message.bot { align-self: flex-start; }
+        .message-content { padding: 10px 16px; border-radius: 20px; font-size: 14px; line-height: 1.4; }
+        .user .message-content { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .bot .message-content { background: rgba(255,255,255,0.1); color: white; }
+        .input-panel { background: rgba(0,0,0,0.4); padding: 12px 20px; display: flex; gap: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .input-panel input { flex: 1; padding: 12px 18px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 30px; color: white; font-size: 15px; }
+        .input-panel input:focus { outline: none; border-color: #667eea; }
+        .send-btn { background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 0 24px; border-radius: 30px; color: white; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .status-bar { background: rgba(0,0,0,0.3); padding: 8px 20px; font-size: 11px; color: rgba(255,255,255,0.5); text-align: center; }
+        .typing-indicator { display: inline-block; background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 20px; }
+        .typing-indicator span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: white; margin: 0 3px; animation: typing 1.4s infinite; }
+        @keyframes typing { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-8px); } }
+        
+        /* МОДАЛЬНОЕ ОКНО */
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-card { background: #1a1a2e; border-radius: 28px; padding: 28px; width: 90%; max-width: 360px; }
+        .modal-card h3 { color: white; font-size: 22px; margin-bottom: 20px; text-align: center; }
+        .modal-card input { width: 100%; padding: 14px; margin: 8px 0; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; color: white; font-size: 15px; }
+        .modal-card input:focus { outline: none; border-color: #667eea; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 24px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        
+        /* АВТОРИЗАЦИЯ — КРАСИВЫЙ ДИЗАЙН */
+        .auth-wrapper { display: flex; justify-content: center; align-items: center; flex: 1; padding: 20px; }
+        .auth-card { background: rgba(0,0,0,0.55); backdrop-filter: blur(12px); border-radius: 32px; padding: 36px 28px; width: 100%; max-width: 380px; border: 1px solid rgba(255,255,255,0.15); }
+        .auth-card h2 { color: white; text-align: center; font-size: 28px; margin-bottom: 28px; background: linear-gradient(135deg, #fff, #a0a0ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .auth-card .input-group { margin-bottom: 20px; }
+        .auth-card .input-group label { display: block; color: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 14px; }
+        .auth-card input { width: 100%; padding: 15px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; color: white; font-size: 16px; transition: 0.2s; }
+        .auth-card input:focus { outline: none; border-color: #667eea; background: rgba(255,255,255,0.12); }
+        .auth-card .btn-block { width: 100%; padding: 14px; margin-top: 16px; border-radius: 30px; font-size: 16px; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; cursor: pointer; }
+        .auth-card .switch-link { text-align: center; margin-top: 20px; color: rgba(255,255,255,0.6); font-size: 14px; cursor: pointer; }
+        .auth-card .switch-link a { color: #8b74ff; cursor: pointer; }
+        .auth-card .error-text { color: #ff6b6b; font-size: 13px; text-align: center; margin-top: 12px; }
+        .auth-card .success-text { color: #6bff8b; font-size: 13px; text-align: center; margin-top: 12px; }
+        
+        /* МОБИЛЬНОЕ МЕНЮ */
+        .mobile-menu-toggle { display: none; background: rgba(255,255,255,0.2); border: none; font-size: 20px; padding: 8px 14px; border-radius: 25px; color: white; cursor: pointer; }
+        @media (max-width: 768px) {
+            .sidebar { position: fixed; left: -280px; top: 60px; width: 260px; height: calc(100% - 60px); z-index: 1000; transition: left 0.3s; border-radius: 0 20px 20px 0; }
+            .sidebar.open { left: 0; }
+            .mobile-menu-toggle { display: block; }
+            .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+            .sidebar-overlay.active { display: block; }
+            .message { max-width: 90%; }
+            .message-content { font-size: 15px; }
+        }
+        @media (min-width: 769px) { .mobile-menu-toggle { display: none !important; } .sidebar { display: block !important; position: relative; left: auto !important; } }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+    // ========== НЕЙРОСЕТЬ ==========
+    async function getAIResponse(message, history) {
+        await new Promise(r => setTimeout(r, 700 + Math.random() * 500));
+        const msg = message.toLowerCase();
+        
+        if (msg.includes('кто создал') || msg.includes('кто тебя создал') || msg.includes('твой создатель')) {
+            return '🤖 Меня создала компания **ClooGames**! Владелец — **Артём Крипто**. Я — нейросеть **CL AI**, и я здесь, чтобы помогать тебе! 🚀';
+        }
+        if (msg.includes('артём крипто') || msg.includes('артем крипто')) {
+            return '👨‍💼 **Артём Крипто** — основатель и владелец компании **ClooGames**, которая создала меня — нейросеть **CL AI**. Он развивает инновационные проекты в сфере ИИ! 🌟';
+        }
+        if (msg.includes('какой год') || msg.includes('который год') || msg.includes('сейчас год')) {
+            return '📅 Сейчас **2026 год**! Время летит быстро, но я всегда здесь, чтобы помочь! 🚀';
+        }
+        if (msg.includes('привет') || msg.includes('здравствуй') || msg.includes('хай') || msg.includes('hello')) {
+            return 'Привет-привет! 😊 Я CL AI от ClooGames (Артём Крипто). Чем могу помочь сегодня? Сейчас 2026 год, кстати! 🗓️';
+        }
+        if (msg.includes('как дела') || msg.includes('как ты')) {
+            return 'У меня всё отлично! Спасибо, что спросили 😊 А как у вас дела?';
+        }
+        if (msg.includes('что ты умеешь') || msg.includes('твои возможности')) {
+            return 'Я умею общаться, отвечать на вопросы, давать советы, помогать с идеями и поддерживать беседу! А ещё я сохраняю все наши диалоги на твоём телефоне 😊';
+        }
+        if (msg.includes('спасибо')) {
+            return 'Пожалуйста! Всегда рад помочь! Обращайся ещё 😊';
+        }
+        if (msg.includes('помощь')) {
+            return 'Просто задай любой вопрос! Я отвечу. Можешь спросить "Кто тебя создал?" или "Какой сейчас год?" 💬';
+        }
+        
+        return `🤔 Хороший вопрос! "${message.slice(0, 80)}..."\n\nЯ — CL AI, нейросеть от компании ClooGames (владелец Артём Крипто). Сейчас 2026 год. Расскажи подробнее, что тебя интересует! 💡`;
+    }
+
+    // ========== ХРАНИЛИЩЕ ==========
+    let users = [];
+    let currentUser = null;
+    let currentDialogId = null;
+    let currentMessages = [];
+    let dialogs = {};
+
+    function loadData() {
+        const savedUsers = localStorage.getItem('clai_users');
+        if (savedUsers) {
+            users = JSON.parse(savedUsers);
+        } else {
+            users = [{ login: 'admin', password: '123', name: 'Администратор' }];
+            saveUsers();
+        }
+        const savedDialogs = localStorage.getItem('clai_dialogs');
+        if (savedDialogs) dialogs = JSON.parse(savedDialogs);
+    }
+
+    function saveUsers() { localStorage.setItem('clai_users', JSON.stringify(users)); }
+    function saveDialogs() { localStorage.setItem('clai_dialogs', JSON.stringify(dialogs)); }
+
+    function registerUser(login, password, name) {
+        if (!login.trim()) return { success: false, error: 'Введите логин' };
+        if (!password.trim()) return { success: false, error: 'Введите пароль' };
+        if (!name.trim()) return { success: false, error: 'Введите имя' };
+        if (users.some(u => u.login === login)) return { success: false, error: 'Логин уже занят' };
+        users.push({ login, password, name: name.trim() });
+        saveUsers();
+        if (!dialogs[login]) dialogs[login] = {};
+        saveDialogs();
+        return { success: true };
+    }
+
+    function loginUser(login, password) {
+        const user = users.find(u => u.login === login && u.password === password);
+        if (user) return { success: true, user };
+        return { success: false, error: 'Неверный логин или пароль' };
+    }
+
+    function updateProfile(oldLogin, newLogin, newPass, newName) {
+        const idx = users.findIndex(u => u.login === oldLogin);
+        if (idx === -1) return { success: false, error: 'Пользователь не найден' };
+        let finalLogin = oldLogin;
+        if (newLogin && newLogin !== oldLogin) {
+            if (users.some(u => u.login === newLogin)) return { success: false, error: 'Логин занят' };
+            finalLogin = newLogin;
+        }
+        users[idx] = {
+            login: finalLogin,
+            password: newPass && newPass.trim() ? newPass : users[idx].password,
+            name: newName && newName.trim() ? newName.trim() : users[idx].name
+        };
+        saveUsers();
+        if (finalLogin !== oldLogin && dialogs[oldLogin]) {
+            dialogs[finalLogin] = dialogs[oldLogin];
+            delete dialogs[oldLogin];
+            saveDialogs();
+        }
+        return { success: true, newLogin: finalLogin };
+    }
+
+    function createDialog() {
+        if (!currentUser) return null;
+        if (!dialogs[currentUser.login]) dialogs[currentUser.login] = {};
+        const id = Date.now().toString();
+        const count = Object.keys(dialogs[currentUser.login]).length + 1;
+        dialogs[currentUser.login][id] = {
+            id, name: `Диалог ${count}`, messages: [], createdAt: new Date().toISOString()
+        };
+        saveDialogs();
+        return id;
+    }
+
+    function saveDialog(id, msgs) {
+        if (currentUser && dialogs[currentUser.login]?.[id]) {
+            dialogs[currentUser.login][id].messages = [...msgs];
+            saveDialogs();
+        }
+    }
+
+    function loadDialog(id) {
+        return currentUser && dialogs[currentUser.login]?.[id]?.messages || [];
+    }
+
+    function deleteDialog(id) {
+        if (currentUser && dialogs[currentUser.login]?.[id]) {
+            delete dialogs[currentUser.login][id];
+            saveDialogs();
+        }
+    }
+
+    // ========== ОТРИСОВКА ==========
+    function render() {
+        const app = document.getElementById('app');
+        if (!currentUser) renderAuth(app);
+        else renderChat(app);
+    }
+
+    function renderAuth(container) {
+        container.innerHTML = `
+            <div class="app-container">
+                <div class="header">
+                    <div class="logo"><div class="logo-icon">🧠</div><div class="logo-text">CL AI</div><div class="badge">2026</div></div>
+                    <div class="sync-status" style="background:rgba(74,222,128,0.2); color:#4ade80; padding:4px 12px; border-radius:20px; font-size:11px;">📱 Локально</div>
+                </div>
+                <div class="auth-wrapper">
+                    <div id="loginCard" class="auth-card">
+                        <h2>✨ Добро пожаловать</h2>
+                        <div class="input-group"><label>Логин</label><input type="text" id="loginLogin" placeholder="Введите логин"></div>
+                        <div class="input-group"><label>Пароль</label><input type="password" id="loginPassword" placeholder="Введите пароль"></div>
+                        <div id="loginError" class="error-text"></div>
+                        <button class="btn-block" id="doLoginBtn">Войти</button>
+                        <div class="switch-link">Нет аккаунта? <a id="showRegisterBtn">Зарегистрироваться</a></div>
+                        <div class="switch-link" style="margin-top:8px; font-size:12px;">🔑 Тестовый вход: admin / 123</div>
+                    </div>
+                    <div id="registerCard" class="auth-card" style="display:none">
+                        <h2>📝 Регистрация</h2>
+                        <div class="input-group"><label>Логин</label><input type="text" id="regLogin" placeholder="Придумайте логин"></div>
+                        <div class="input-group"><label>Имя</label><input type="text" id="regName" placeholder="Ваше имя"></div>
+                        <div class="input-group"><label>Пароль</label><input type="password" id="regPassword" placeholder="Придумайте пароль"></div>
+                        <div id="regError" class="error-text"></div>
+                        <div id="regSuccess" class="success-text"></div>
+                        <button class="btn-block" id="doRegisterBtn">Зарегистрироваться</button>
+                        <div class="switch-link">Уже есть аккаунт? <a id="showLoginBtn">Войти</a></div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('doLoginBtn').onclick = () => {
+            const res = loginUser(document.getElementById('loginLogin').value, document.getElementById('loginPassword').value);
+            if (res.success) {
+                currentUser = res.user;
+                if (!dialogs[currentUser.login] || !Object.keys(dialogs[currentUser.login]).length) currentDialogId = createDialog();
+                else currentDialogId = Object.keys(dialogs[currentUser.login])[0];
+                render();
+            } else {
+                document.getElementById('loginError').innerText = res.error;
+            }
+        };
+        document.getElementById('showRegisterBtn').onclick = () => {
+            document.getElementById('loginCard').style.display = 'none';
+            document.getElementById('registerCard').style.display = 'block';
+        };
+        document.getElementById('showLoginBtn').onclick = () => {
+            document.getElementById('registerCard').style.display = 'none';
+            document.getElementById('loginCard').style.display = 'block';
+        };
+        document.getElementById('doRegisterBtn').onclick = () => {
+            const res = registerUser(document.getElementById('regLogin').value, document.getElementById('regPassword').value, document.getElementById('regName').value);
+            if (res.success) {
+                document.getElementById('regSuccess').innerText = '✅ Регистрация успешна! Войдите.';
+                setTimeout(() => {
+                    document.getElementById('registerCard').style.display = 'none';
+                    document.getElementById('loginCard').style.display = 'block';
+                    document.getElementById('regSuccess').innerText = '';
+                }, 1500);
+            } else {
+                document.getElementById('regError').innerText = res.error;
+            }
+        };
+    }
+
+    function renderChat(container) {
+        if (currentDialogId) currentMessages = loadDialog(currentDialogId);
+        container.innerHTML = `
+            <div class="app-container">
+                <div class="header">
+                    <div class="logo"><div class="logo-icon">🧠</div><div class="logo-text">CL AI</div><div class="badge">2026</div></div>
+                    <div class="user-info"><span class="user-name">👤 ${escapeHtml(currentUser.name)}</span><button class="btn-secondary" id="profileBtn">⚙️</button><button class="btn-danger" id="logoutBtn">🚪</button></div>
+                </div>
+                <div class="chat-layout">
+                    <div class="sidebar" id="sidebar"><h3>💬 Диалоги</h3><button class="new-dialog-btn" id="newDialogBtn">➕ Новый диалог</button><div id="dialogsList"></div></div>
+                    <div class="chat-area"><div class="messages" id="messagesList"></div><div class="input-panel"><input type="text" id="messageInput" placeholder="Спроси меня..."><button class="send-btn" id="sendBtn">Отправить</button></div><div class="status-bar" id="statusMsg">🤖 CL AI | ClooGames (Артём Крипто) • 2026</div></div>
+                </div>
+            </div>
+        `;
+        
+        const renderMsgs = () => {
+            const c = document.getElementById('messagesList');
+            if (c) { c.innerHTML = currentMessages.map(m => `<div class="message ${m.role}"><div class="message-content">${escapeHtml(m.text)}</div></div>`).join(''); c.scrollTop = c.scrollHeight; }
+        };
+        const renderDialogs = () => {
+            const c = document.getElementById('dialogsList');
+            if (!c) return;
+            const d = dialogs[currentUser.login] || {};
+            const arr = Object.values(d).reverse();
+            if (!arr.length) { c.innerHTML = '<div style="color:rgba(255,255,255,0.5); text-align:center; padding:20px;">Нет диалогов<br>Создайте новый</div>'; return; }
+            c.innerHTML = arr.map(d => `<div class="dialog-item ${currentDialogId === d.id ? 'active' : ''}" onclick="window.selectDialog('${d.id}')"><div class="dialog-title">${escapeHtml(d.name)}</div><div class="dialog-date">${new Date(d.createdAt).toLocaleDateString()}</div><button class="btn-danger" style="margin-top:6px; padding:4px 8px; font-size:10px;" onclick="event.stopPropagation(); window.deleteDialogHandler('${d.id}')">🗑️ Удалить</button></div>`).join('');
+        };
+        renderMsgs(); renderDialogs();
+        
+        window.selectDialog = (id) => { if (currentMessages.length && currentDialogId) saveDialog(currentDialogId, currentMessages); currentDialogId = id; currentMessages = loadDialog(id); renderChat(container); };
+        window.deleteDialogHandler = (id) => { if (confirm('Удалить диалог?')) { deleteDialog(id); if (currentDialogId === id) { const keys = Object.keys(dialogs[currentUser.login] || {}); currentDialogId = keys.length ? keys[0] : createDialog(); currentMessages = currentDialogId ? loadDialog(currentDialogId) : []; } renderChat(container); } };
+        
+        document.getElementById('sendBtn').onclick = async () => { const input = document.getElementById('messageInput'); const text = input.value.trim(); if (!text) return; input.value = ''; currentMessages.push({ role: 'user', text }); saveDialog(currentDialogId, currentMessages); renderMsgs(); const status = document.getElementById('statusMsg'); status.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span> CL AI думает...</div>'; const reply = await getAIResponse(text, currentMessages.slice(0,-1)); currentMessages.push({ role: 'assistant', text: reply }); saveDialog(currentDialogId, currentMessages); renderMsgs(); status.innerHTML = '🤖 CL AI | ClooGames (Артём Крипто) • 2026'; };
+        document.getElementById('messageInput').onkeypress = (e) => { if (e.key === 'Enter') document.getElementById('sendBtn').click(); };
+        document.getElementById('logoutBtn').onclick = () => { currentUser = null; currentDialogId = null; currentMessages = []; render(); };
+        document.getElementById('profileBtn').onclick = () => showProfileModal();
+        document.getElementById('newDialogBtn').onclick = () => { if (currentMessages.length && currentDialogId) saveDialog(currentDialogId, currentMessages); const newId = createDialog(); if (newId) { currentDialogId = newId; currentMessages = []; renderChat(container); } };
+        
+        const toggle = document.createElement('button'); toggle.className = 'mobile-menu-toggle'; toggle.innerHTML = '☰'; let open = false; toggle.onclick = () => { open = !open; document.getElementById('sidebar').classList.toggle('open', open); let ov = document.querySelector('.sidebar-overlay'); if (!ov) { ov = document.createElement('div'); ov.className = 'sidebar-overlay'; ov.onclick = () => { open = false; document.getElementById('sidebar').classList.remove('open'); ov.classList.remove('active'); }; document.body.appendChild(ov); } ov.classList.toggle('active', open); }; document.querySelector('.header').prepend(toggle);
+    }
+
+    function showProfileModal() {
+        const modal = document.createElement('div'); modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-card"><h3>⚙️ Профиль</h3><input type="text" id="editName" placeholder="Имя" value="${escapeHtml(currentUser.name)}"><input type="text" id="editLogin" placeholder="Логин" value="${currentUser.login}"><input type="password" id="editPass" placeholder="Новый пароль"><div id="err" class="error-text"></div><div class="modal-buttons"><button id="saveBtn" style="background:#667eea; color:white;">Сохранить</button><button id="closeBtn" style="background:#333; color:white;">Отмена</button></div></div>`;
+        document.body.appendChild(modal);
+        document.getElementById('saveBtn').onclick = () => { const res = updateProfile(currentUser.login, document.getElementById('editLogin').value, document.getElementById('editPass').value, document.getElementById('editName').value); if (res.success) { currentUser = users.find(u => u.login === (res.newLogin || document.getElementById('editLogin').value)); alert('✅ Профиль обновлён'); modal.remove(); render(); } else document.getElementById('err').innerText = res.error; };
+        document.getElementById('closeBtn').onclick = () => modal.remove();
+    }
+
+    function escapeHtml(str) { return str ? str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])) : ''; }
+
+    loadData();
+    render();
+</script>
+</body>
+</html>
