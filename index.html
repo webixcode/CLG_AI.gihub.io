@@ -75,96 +75,41 @@
 <div id="app"></div>
 
 <script>
-    // ========== ВСТРОЕННАЯ НЕЙРОСЕТЬ (РАБОТАЕТ БЕЗ ИНТЕРНЕТА) ==========
+    // ========== ВСТАВЬ СВОЙ API КЛЮЧ СЮДА ==========
+    const API_KEY = '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';
+    const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
     async function getAIResponse(message, history) {
-        // Имитация "думания" нейросети
-        await new Promise(r => setTimeout(r, 800 + Math.random() * 700));
-        
-        const msg = message.toLowerCase();
-        
-        // === ВОПРОСЫ О СОЗДАТЕЛЯХ ===
-        if (msg.includes('кто создал') || msg.includes('кто тебя создал') || msg.includes('твой создатель')) {
-            return '🤖 Меня создала компания **ClooGames**! Владелец компании — **Артём Крипто**. Я — нейросеть **CLG AI**, и я здесь, чтобы помогать тебе! 🚀';
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: 'deepseek/deepseek-chat:free',
+                    messages: [
+                        { role: 'system', content: 'Ты — CLG AI, умный помощник. Отвечай на русском языке. Тебя создала компания ClooGames, владелец — Артём Крипто. Сейчас 2026 год.' },
+                        ...history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.text })),
+                        { role: 'user', content: message }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 1000
+                })
+            });
+            if (!response.ok) return 'Ошибка API. Проверьте интернет.';
+            const data = await response.json();
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content;
+            }
+            return 'Ошибка. Попробуйте ещё раз.';
+        } catch (error) {
+            return 'Ошибка соединения. Проверьте интернет.';
         }
-        
-        if (msg.includes('артём крипто') || msg.includes('артем крипто') || msg.includes('артём') && msg.includes('крипто')) {
-            return '👨‍💼 **Артём Крипто** — основатель и владелец компании **ClooGames**, которая создала меня — нейросеть **CLG AI**. Он увлечён технологиями искусственного интеллекта и развивает инновационные проекты! 🌟';
-        }
-        
-        if (msg.includes('cloogames') || msg.includes('клу геймс')) {
-            return '🏢 **ClooGames** — это инновационная компания, занимающаяся разработкой искусственного интеллекта и нейросетей. Основана **Артёмом Крипто**. Я — одна из их ключевых разработок! 💡';
-        }
-        
-        // === ВОПРОСЫ О ВРЕМЕНИ И ДАТЕ ===
-        if (msg.includes('какой год') || msg.includes('который год') || msg.includes('сейчас год')) {
-            return '📅 Сейчас **2026 год**! Время летит быстро, но я всегда здесь, чтобы помочь! 🚀';
-        }
-        
-        if (msg.includes('время') || msg.includes('час')) {
-            const now = new Date();
-            return `🕐 Сейчас ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} по вашему устройству!`;
-        }
-        
-        if (msg.includes('дата') || msg.includes('сегодня') || msg.includes('число')) {
-            const now = new Date();
-            return `📅 Сегодня ${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear()}! Хорошего дня! 🎉`;
-        }
-        
-        // === ПРИВЕТСТВИЯ ===
-        if (msg.includes('привет') || msg.includes('здравствуй') || msg.includes('хай') || msg.includes('hello') || msg.includes('добрый день')) {
-            return 'Привет-привет! 😊 Я CLG AI от ClooGames (Артём Крипто). Чем могу помочь сегодня? Сейчас 2026 год, кстати! 🗓️';
-        }
-        
-        // === КАК ДЕЛА ===
-        if (msg.includes('как дела') || msg.includes('как ты') || msg.includes('как жизнь')) {
-            return 'У меня всё отлично! Спасибо, что спросили 😊 Я создан компанией ClooGames, и у нас тут полный порядок! А как у вас дела? 🌟';
-        }
-        
-        // === ЧТО УМЕЕШЬ / ВОЗМОЖНОСТИ ===
-        if (msg.includes('что ты умеешь') || msg.includes('твои возможности') || msg.includes('что можешь')) {
-            return 'Я умею очень многое! 🚀\n\n• Отвечать на любые вопросы\n• Давать советы и помогать с решениями\n• Поддерживать беседу на любые темы\n• Рассказывать шутки и интересные факты\n• Помогать с учёбой и работой\n• И это только начало!\n\nПросто спроси меня о чём угодно! 💬';
-        }
-        
-        // === ШУТКИ ===
-        if (msg.includes('шутка') || msg.includes('анекдот') || msg.includes('рассмеши')) {
-            const jokes = [
-                '🤣 Шутка для вас:\n\nПочему программисты всегда путают Хэллоуин и Рождество?\n\nПотому что 31 Oct = 25 Dec! 🎃🎄',
-                '😄 Держите шутку:\n\n— Почему нейросеть не ходит в школу?\n— Потому что она уже всё знает! 😎\n\n(Шучу, я ещё учусь каждый день!)',
-                '😂 Ещё шутка:\n\nВстречаются две нейросети:\n— Ты чего грустная?\n— Да вот, пользователь спросил, есть ли у меня чувства... А я не знаю, что ответить...\n— А ты спроси у него, есть ли у него совесть!',
-                '🎯 Шутка в тему:\n\n— Ты умная?\n— Конечно! Я же нейросеть!\n— Тогда почему не можешь ответить на мой вопрос?\n— Потому что ты его ещё не задал! 😄'
-            ];
-            return jokes[Math.floor(Math.random() * jokes.length)];
-        }
-        
-        // === ПОМОЩЬ ===
-        if (msg.includes('помощь') || msg.includes('help') || msg.includes('что делать')) {
-            return '🆘 Я могу помочь тебе!\n\nПросто задай любой вопрос, и я постараюсь ответить максимально полезно.\n\n📌 Примеры вопросов:\n• "Кто тебя создал?"\n• "Какой сейчас год?"\n• "Расскажи шутку"\n• "Что ты умеешь?"\n• "Расскажи про Илона Маска"\n\nСпрашивай что угодно! 💬';
-        }
-        
-        // === СПАСИБО ===
-        if (msg.includes('спасибо')) {
-            return 'Пожалуйста! 🤗 Всегда рад помочь! Обращайся ещё, буду ждать с нетерпением. Хорошего дня! 😊';
-        }
-        
-        // === ВОПРОСЫ ПРО ЗНАМЕНИТОСТЕЙ ===
-        if (msg.includes('илон маск') || msg.includes('илон маск') || msg.includes('elon musk')) {
-            return '🚀 **Илон Маск** — предприниматель, изобретатель и миллиардер. Он основатель таких компаний, как Tesla (электромобили), SpaceX (космические ракеты), Neuralink (нейротехнологии), The Boring Company (тоннели) и других. Он также приобрёл Twitter и переименовал его в X. Его цель — сделать человечество мультипланетным видом и ускорить переход на устойчивую энергетику. Очень вдохновляющая личность! 🌟';
-        }
-        
-        if (msg.includes('путин') || msg.includes('путин')) {
-            return '🇷🇺 Владимир Путин — президент Российской Федерации. Это политическая тема, и я стараюсь быть нейтральным и не углубляться в политику. Могу лучше рассказать о технологиях или науке! 💡';
-        }
-        
-        // === ОБЩИЙ ИНТЕЛЛЕКТУАЛЬНЫЙ ОТВЕТ ===
-        if (msg.length > 10) {
-            return `🤔 Отличный вопрос! "${message.slice(0, 100)}${message.length > 100 ? '...' : ''}"\n\nЯ — **CLG AI**, нейросеть от компании ClooGames (владелец **Артём Крипто**). Сейчас 2026 год. Я стараюсь быть максимально полезным и умным помощником.\n\n💡 По вашему вопросу: это действительно интересная тема для размышлений. Если хотите, можем обсудить её подробнее — задавайте уточняющие вопросы!\n\n✨ Чем ещё могу помочь?`;
-        }
-        
-        // === СТАНДАРТНЫЙ ОТВЕТ ===
-        return `✨ Спасибо за вопрос! "${message}"\n\nЯ — CLG AI, нейросеть от ClooGames (Артём Крипто). Сейчас 2026 год. Если хотите что-то спросить — я здесь, чтобы помочь! Задавайте любые вопросы — я постараюсь ответить максимально полезно. 💬`;
     }
 
-    // ========== ОСТАЛЬНАЯ ЛОГИКА (АВТОРИЗАЦИЯ, ДИАЛОГИ, ХРАНИЛИЩЕ) ==========
+    // ========== ВСЯ ЛОГИКА АВТОРИЗАЦИИ И ДИАЛОГОВ ==========
     let users = [];
     let currentUser = null;
     let currentDialogId = null;
@@ -172,22 +117,20 @@
     let dialogs = {};
 
     function loadData() {
-        const savedUsers = localStorage.getItem('clg_users_final');
+        const savedUsers = localStorage.getItem('clg_users');
         if (savedUsers) users = JSON.parse(savedUsers);
         else users = [];
-        
-        const savedDialogs = localStorage.getItem('clg_dialogs_final');
+        const savedDialogs = localStorage.getItem('clg_dialogs');
         if (savedDialogs) dialogs = JSON.parse(savedDialogs);
     }
-
-    function saveUsers() { localStorage.setItem('clg_users_final', JSON.stringify(users)); }
-    function saveDialogs() { localStorage.setItem('clg_dialogs_final', JSON.stringify(dialogs)); }
+    function saveUsers() { localStorage.setItem('clg_users', JSON.stringify(users)); }
+    function saveDialogs() { localStorage.setItem('clg_dialogs', JSON.stringify(dialogs)); }
 
     function registerUser(login, password, name) {
-        if (!login.trim()) return { success: false, error: '❌ Введите логин' };
-        if (!password.trim()) return { success: false, error: '❌ Введите пароль' };
-        if (!name.trim()) return { success: false, error: '❌ Введите имя' };
-        if (users.some(u => u.login === login)) return { success: false, error: '❌ Логин уже занят' };
+        if (!login.trim()) return { success: false, error: 'Введите логин' };
+        if (!password.trim()) return { success: false, error: 'Введите пароль' };
+        if (!name.trim()) return { success: false, error: 'Введите имя' };
+        if (users.some(u => u.login === login)) return { success: false, error: 'Логин уже занят' };
         users.push({ login, password, name: name.trim() });
         saveUsers();
         if (!dialogs[login]) dialogs[login] = {};
@@ -198,7 +141,7 @@
     function loginUser(login, password) {
         const user = users.find(u => u.login === login && u.password === password);
         if (user) return { success: true, user };
-        return { success: false, error: '❌ Неверный логин или пароль' };
+        return { success: false, error: 'Неверный логин или пароль' };
     }
 
     function updateProfile(oldLogin, newLogin, newPass, newName) {
@@ -228,9 +171,7 @@
         if (!dialogs[currentUser.login]) dialogs[currentUser.login] = {};
         const id = Date.now().toString();
         const count = Object.keys(dialogs[currentUser.login]).length + 1;
-        dialogs[currentUser.login][id] = {
-            id, name: `📝 Диалог ${count}`, messages: [], createdAt: new Date().toISOString()
-        };
+        dialogs[currentUser.login][id] = { id, name: `Диалог ${count}`, messages: [], createdAt: new Date().toISOString() };
         saveDialogs();
         return id;
     }
@@ -242,16 +183,8 @@
         }
     }
 
-    function loadDialog(id) {
-        return currentUser && dialogs[currentUser.login]?.[id]?.messages || [];
-    }
-
-    function deleteDialog(id) {
-        if (currentUser && dialogs[currentUser.login]?.[id]) {
-            delete dialogs[currentUser.login][id];
-            saveDialogs();
-        }
-    }
+    function loadDialog(id) { return currentUser && dialogs[currentUser.login]?.[id]?.messages || []; }
+    function deleteDialog(id) { if (currentUser && dialogs[currentUser.login]?.[id]) { delete dialogs[currentUser.login][id]; saveDialogs(); } }
 
     function render() {
         const app = document.getElementById('app');
